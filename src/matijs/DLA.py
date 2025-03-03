@@ -136,8 +136,8 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import matplotlib.animation as animation
     
-    N_STEPS = 40
-    material_results, concentration_results = dla(1000, 1000, 1.5, N_STEPS)
+    N_STEPS = 1000
+    material_results, concentration_results = dla(100, 100, 2, N_STEPS)
     print('results created, plotting...')
     """ fig, ax = plt.subplots(figsize=(6, 4))
     cax = ax.imshow(material_results[0], cmap="hot", aspect="auto", origin="lower", extent=[0, 1, 1, 0])
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     ax2.set_xlabel("x")
     ax2.set_ylabel("y")
     
-    N_FRAMES = 100
+    N_FRAMES = 20
     frames = np.linspace(0, len(material_results)-1, N_FRAMES).astype(int)
     
     def update_frame(frame):
