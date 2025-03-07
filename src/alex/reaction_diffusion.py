@@ -86,17 +86,17 @@ def laplacian_PBC(Z, delta=dx):
         np.roll(Z, 1, axis=1) + np.roll(Z, -1, axis=1) - 4 * Z
     ) / (delta ** 2)
 
-def update(boudary_condition='PBC', U_BC_update=0.5, alpha_update=D_v, h_update=dx, dt_update=dt):
+def update(boundary_condition='PBC', U_BC_update=0.5, alpha_update=D_v, h_update=dx, dt_update=dt):
     '''Update the state of the system.'''
     global U, V
     
-    if boudary_condition == 'PBC':
+    if boundary_condition == 'PBC':
         laplacian = laplacian_PBC
-    elif boudary_condition == 'Dirichlet Strong':
+    elif boundary_condition == 'Dirichlet Strong':
         laplacian = lambda Z: laplacian_dirichlet_strong(Z, U_BC=U_BC_update)
-    elif boudary_condition == 'Dirichlet Ghost':
+    elif boundary_condition == 'Dirichlet Ghost':
         laplacian = lambda Z: laplacian_dirichlet_ghost(Z, U_BC=U_BC_update, alpha=alpha_update, h=h_update, dt=dt_update)
-    elif boudary_condition == 'Neumann':
+    elif boundary_condition == 'Neumann':
         laplacian = laplacian_neumann
     else:
         raise ValueError('Invalid boundary condition')
@@ -113,7 +113,7 @@ def update(boudary_condition='PBC', U_BC_update=0.5, alpha_update=D_v, h_update=
     V += dVdt * dt
 
     # Only for dirichlet ghost!!!
-    if boudary_condition == 'Dirichlet Ghost':
+    if boundary_condition == 'Dirichlet Ghost':
         U[0, :] += dt * (2 * alpha_update / h_update**2) * (U_BC_update - U[0, :])  # Top boundary
         U[-1, :] += dt * (2 * alpha_update / h_update**2) * (U_BC_update - U[-1, :])  # Bottom boundary
         U[:, 0] += dt * (2 * alpha_update / h_update**2) * (U_BC_update - U[:, 0])  # Left boundary
@@ -131,7 +131,7 @@ def plot_system(boundary_condition="PBC"):
 
     def animate(i):
         for _ in range(10):  # fast forward each 10 frames
-            update(boudary_condition = boundary_condition)
+            update(boundary_condition = boundary_condition)
         im.set_array(V)
         return [im]
     
