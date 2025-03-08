@@ -159,6 +159,31 @@ def plot_system(boundary_condition="PBC"):
     plt.colorbar(im)
     plt.show()
 
+def plot_html(boundary_condition="PBC", observed_variable = "V", f_value = 0, k_value = 0):
+    observed_range = {"U": U, "V": V}
+    if observed_variable not in observed_range:
+        raise ValueError("Invalid observed variable")
+    observed_value = observed_range[observed_variable]
+
+    ###### HTML version animation ######
+    fig_html, ax_html = plt.subplots()
+    im_html = ax_html.imshow(observed_value, cmap='inferno', interpolation='bilinear')
+    ax_html.set_title(f"Gray-Scott Model Simulation\nBoundary: {boundary_condition}, f={f_value}, k={k_value}")
+
+    def animate_html(i):
+        for _ in range(10):
+            # core update function
+            # remember to set the boundary condition, f, and k values
+            update(boundary_condition=boundary_condition, f_value = f_value, k_value = k_value)
+        im_html.set_array(observed_value)
+        return [im_html]
+
+    ani_html = animation.FuncAnimation(fig_html, animate_html, frames=200, interval=50)
+
+    plt.colorbar(im_html)
+    
+    return HTML(ani_html.to_jshtml())  # display the animation in the notebook
+
 # plot the animation of Gray-Scott model simulation
 def plot_animation(boundary_condition="PBC", observed_variable = "U", f_value = f, k_value = k):
     reset_global_UV()
@@ -180,11 +205,11 @@ def plot_animation(boundary_condition="PBC", observed_variable = "U", f_value = 
 
     ###### MP4 version animation ######
     fig_mp4, ax_mp4 = plt.subplots()
-    im_mp4 = ax_mp4.imshow(V, cmap='inferno', interpolation='bilinear')
+    im_mp4 = ax_mp4.imshow(observed_value, cmap='inferno', interpolation='bilinear')
     if boundary_condition == "PBC":
-        ax_mp4.set_title(f"Gray-Scott Model Simulation\nBoundary: Periodic Boundary Condition")
+        ax_mp4.set_title(f"Gray-Scott Model Simulation\nBoundary: {boundary_condition}, f={f_value}, k={k_value}")
     else :
-        ax_mp4.set_title(f"Gray-Scott Model Simulation\nBoundary: {boundary_condition}")
+        ax_mp4.set_title(f"Gray-Scott Model Simulation\nBoundary: {boundary_condition}, f={f_value}, k={k_value}")
 
     def animate_mp4(i):
         for _ in range(10):
@@ -204,28 +229,28 @@ def plot_animation(boundary_condition="PBC", observed_variable = "U", f_value = 
 
     plt.close(fig_mp4)  # close the figure to avoid showing it in the notebook
 
-    ###### HTML version animation ######
-    reset_global_UV()
-    fig_html, ax_html = plt.subplots()
-    im_html = ax_html.imshow(V, cmap='inferno', interpolation='bilinear')
-    if boundary_condition == "PBC":
-        ax_html.set_title(f"Gray-Scott Model Simulation\nBoundary: Periodic Boundary Condition")
-    else :
-        ax_html.set_title(f"Gray-Scott Model Simulation\nBoundary: {boundary_condition}")
+    # ###### HTML version animation ######
+    # reset_global_UV()
+    # fig_html, ax_html = plt.subplots()
+    # im_html = ax_html.imshow(observed_value, cmap='inferno', interpolation='bilinear')
+    # if boundary_condition == "PBC":
+    #     ax_html.set_title(f"Gray-Scott Model Simulation\nBoundary: {boundary_condition}, f={f_value}, k={k_value}")
+    # else :
+    #     ax_html.set_title(f"Gray-Scott Model Simulation\nBoundary: {boundary_condition}, f={f_value}, k={k_value}")
 
-    def animate_html(i):
-        for _ in range(50):
-            # core update function
-            # remember to set the boundary condition, f, and k values
-            update(boundary_condition=boundary_condition, f_value = f, k_value = k)
-        im_html.set_array(observed_value)
-        return [im_html]
+    # def animate_html(i):
+    #     for _ in range(50):
+    #         # core update function
+    #         # remember to set the boundary condition, f, and k values
+    #         update(boundary_condition=boundary_condition, f_value = f_value, k_value = k_value)
+    #     im_html.set_array(observed_value)
+    #     return [im_html]
 
-    ani_html = animation.FuncAnimation(fig_html, animate_html, frames=500, interval=50)
+    # ani_html = animation.FuncAnimation(fig_html, animate_html, frames=500, interval=50)
 
-    plt.colorbar(im_html)
+    # plt.colorbar(im_html)
     
-    return HTML(ani_html.to_jshtml())  # display the animation in the notebook
+    # return HTML(ani_html.to_jshtml())  # display the animation in the notebook
 
 
 
