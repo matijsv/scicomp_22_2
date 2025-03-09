@@ -4,3 +4,4 @@ matplotlib
 numba
 pandas
 imageio[ffmpeg]
+notebook
