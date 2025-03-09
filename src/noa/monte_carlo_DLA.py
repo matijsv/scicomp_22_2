@@ -107,22 +107,16 @@ def data_analysis(ps, N):
 def plot_data_analysis(ps, rgs, rgs_std, fractal_dims, fractal_dims_std):
 
     # Create figure and axes
-    fig, ax1 = plt.subplots(figsize=(8, 5))
+    fig, ax1 = plt.subplots(figsize=(5, 5))
 
     # Plot first set (x_values with error bars)
-    ax1.errorbar(ps, rgs, yerr=rgs_std, fmt='-o', label="Fractal Dimension", color='tab:blue', capsize=5)
-    ax1.set_xlabel("Parameter Index")
-    ax1.set_ylabel("Fractal Dimension", color='tab:blue')
+    ax1.errorbar(ps, fractal_dims, yerr=fractal_dims_std, fmt='-o', label="Fractal Dimension", capsize=5)
+    ax1.set_xlabel(r"$p_s$")
+    ax1.set_ylabel("Fractal Dimension")
     ax1.tick_params(axis='y', labelcolor='tab:blue')
 
-    # Create second y-axis for the second set (y_values with error bars)
-    ax2 = ax1.twinx()
-    ax2.errorbar(ps, fractal_dims, yerr=fractal_dims_std, fmt='-s', label="Radius of Gyration", color='tab:red', capsize=5)
-    ax2.set_ylabel("Radius of Gyration", color='tab:red')
-    ax2.tick_params(axis='y', labelcolor='tab:red')
-
     # Title and layout adjustments
-    plt.title("Fractal Dimension and Radius of Gyration with Error Bars")
+    # plt.title("Fractal Dimension and Radius of Gyration with Error Bars")
     fig.tight_layout()
 
     # Show plot
@@ -166,7 +160,7 @@ def plot_dla(height, width, num_particles):
 if __name__ == "__main__":
     height, width = 100, 100
     num_particles = 800
-    plot_dla(height,width,num_particles)
+    # plot_dla(height,width,num_particles)
     ps = [0.05,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
     N = 25
     # generate_cluster_data(height,width,num_particles,ps, N)
