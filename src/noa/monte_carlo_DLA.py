@@ -114,7 +114,7 @@ def plot_data_analysis(ps, rgs, rgs_std, fractal_dims, fractal_dims_std):
     ax1.set_xlabel(r"$p_s$")
     ax1.set_ylabel("Fractal Dimension")
     ax1.tick_params(axis='y', labelcolor='tab:blue')
-
+    ax1.set_xlim(0,1)
     # Title and layout adjustments
     # plt.title("Fractal Dimension and Radius of Gyration with Error Bars")
     fig.tight_layout()
