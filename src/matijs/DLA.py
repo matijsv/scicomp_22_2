@@ -3,6 +3,8 @@
 import numpy as np
 from numba import prange, njit
 import time
+import matplotlib.pyplot as plt 
+import matplotlib.animation as animation
 
 # calculate the maximum difference between two arrays
 @njit(parallel=True)
@@ -190,13 +192,17 @@ def dla(N, M, eta, omega, growth_iterations, max_sor_iterations=1000, epsilon=1e
     material_results = []
     concentration_results = []
     sor_iters_per_step = []
-    start_time = time.time()
+    #start_time = time.time() # timing code commented out
     for i in range(growth_iterations):
         candidates = find_adjacents(material_grid)
         
         # Process neighbors and pick one in material grid
-        #assert len(candidates) > 0 & i < growth_iterations - 1, "No more candidates found."
         if candidates:
+            # we clamp all concentration values to be non negative and throw an 
+            # assertion if they are "too" negative (this is a result of SOR over-relaxation) 
+            assert np.all(concentration_grid >= -0.01), "Concentration values dropped below -0.01, adjust omega"
+            concentration_grid = np.maximum(concentration_grid, 0)
+            
             probabilities = [(concentration_grid[i, j]**eta) for i, j in candidates]
             total_probabilites = sum(probabilities)
             
@@ -204,19 +210,16 @@ def dla(N, M, eta, omega, growth_iterations, max_sor_iterations=1000, epsilon=1e
                 normalized_probabilities = probabilities / total_probabilites
                 chosen_index = np.random.choice(len(candidates), p=normalized_probabilities)
                 chosen_neighbor = candidates[chosen_index]
-                #assert material_grid[chosen_neighbor] == 0, "Already-material cell picked."
                 material_grid[chosen_neighbor] = 1
-            elif total_probabilites == 0: # if all concentrations are zero, 
+            elif total_probabilites == 0: # if all concentrations are zero, pick a random candidate
                 chosen_index = np.random.choice(len(candidates))
                 chosen_neighbor = candidates[chosen_index]
-                #assert material_grid[chosen_neighbor] == 0, "Already-material cell picked."
                 material_grid[chosen_neighbor] = 1
                 
-        
-        # SOR STUFF 
         concentration_results.append(concentration_grid.copy())
         material_results.append(material_grid.copy())
         
+        # SOR sub-loop
         for sor_i in range(max_sor_iterations):
             concentration_grid_new = sor_step(concentration_grid.copy(), material_grid, omega, material_conc)
             delta = compute_max_diff(concentration_grid, concentration_grid_new)
@@ -224,21 +227,17 @@ def dla(N, M, eta, omega, growth_iterations, max_sor_iterations=1000, epsilon=1e
                 sor_iters_per_step.append(sor_i)
                 break
             concentration_grid = concentration_grid_new
-        
         assert sor_i < max_sor_iterations, "Maximum SOR iterations were surpassed, increase amount and/or check SOR omega param."
         
-        print(f'Completed Simulation step {i}/{growth_iterations}', end='\r')
+        #print(f'Completed Simulation step {i}/{growth_iterations}', end='\r')
+    #end_time = time.time()
+    #total_time = end_time - start_time
+    #print(f"\nTotal simulation time: {total_time}s")
+    #print(f"Per step: {total_time/growth_iterations}")
     
-    end_time = time.time()
-    total_time = end_time - start_time
-    print(f"\nTotal simulation time: {total_time}s")
-    print(f"Per step: {total_time/growth_iterations}")
     return material_results, concentration_results, sor_iters_per_step
-
-
+    
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    import matplotlib.animation as animation
     
     N_STEPS = 800
     material_results, concentration_results, _ = dla(100, 100, 1, 1, N_STEPS)
