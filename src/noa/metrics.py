@@ -3,34 +3,43 @@ import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
 import os
 
-def fractal_dimension(grid, sizes=np.logspace(1, 2, num=10, base=2, dtype=int)):
-    """
-    Compute the fractal dimension using the box-counting method.
-    
-    Parameters:
-      grid: 2D numpy array representing the cluster.
-      sizes: Box sizes to use for counting occupied boxes.
-    
-    Returns:
-      float: estimated fractal dimension.
-    """
 
-    #nonzero_points = np.column_stack(np.nonzero(grid))  # Extract occupied sites
+import numpy as np
+import matplotlib.pyplot as plt
+
+def box_count(data, box_size):
+    """
+    Counts the number of boxes of size `box_size` that contain at least one nonzero pixel.
+    """
+    num_boxes = 0
+    for i in range(0, data.shape[0], box_size):
+        for j in range(0, data.shape[1], box_size):
+            if np.any(data[i:i+box_size, j:j+box_size]):
+                num_boxes += 1
+    return num_boxes
+
+def fractal_dimension(data, min_box_size=1, max_box_size=None):
+    """
+    Computes the fractal dimension of a 2D numpy array using the box-counting method.
+    """
+    if max_box_size is None:
+        max_box_size = min(data.shape) // 2  # Maximum box size should be at most half of the smallest dimension
+
+    sizes = []
     counts = []
+
+    box_size = min_box_size
+    while box_size <= max_box_size:
+        sizes.append(box_size)
+        counts.append(box_count(data, box_size))
+        box_size *= 2  # Increase box size exponentially
+
+    # Fit log-log plot to estimate the fractal dimension
+    sizes = np.array(sizes)
+    counts = np.array(counts)
+    coeffs = np.polyfit(np.log(sizes), np.log(counts), 1)
     
-    for size in sizes:
-        if size > min(grid.shape):
-            continue
-        # Count number of boxes that contain at least one occupied pixel
-        grid_coarse = grid[::size, ::size]  # Downsample
-        count = np.sum(grid_coarse > 0)
-        counts.append(count)
-    
-    # Fit line to log-log plot
-    log_sizes = np.log(1 / sizes[:len(counts)])
-    log_counts = np.log(counts)
-    coeffs = np.polyfit(log_sizes, log_counts, 1)
-    return -coeffs[0]  # Fractal dimension is the negative slope
+    return -coeffs[0]  # The fractal dimension is the negative slope
 
 def radial_distribution(grid):
     """
@@ -73,7 +82,7 @@ if __name__ == "__main__":
     # Example usage: load a cluster and compute metrics
     import matplotlib.pyplot as plt
     
-    grid1 = np.load("cluster_data_old/cluster_ps1.npy") 
+    grid1 = np.load("cluster_data/cluster_ps1.npy") 
     
     # Compute metrics
     fractal_dim = fractal_dimension(grid1)
@@ -83,7 +92,7 @@ if __name__ == "__main__":
     print(f"Fractal Dimension: {fractal_dim:.3f}")
     print(f"Radius of Gyration: {rg:.3f}")
     
-    grid = np.load("cluster_data_old/cluster_ps02.npy") 
+    grid = np.load("cluster_data/cluster_ps02.npy") 
     
     # Compute metrics
     fractal_dim = fractal_dimension(grid)
@@ -93,7 +102,7 @@ if __name__ == "__main__":
     print(f"Fractal Dimension: {fractal_dim:.3f}")
     print(f"Radius of Gyration: {rg:.3f}")
 
-    grid = np.load("cluster_data_old/cluster_ps05.npy") 
+    grid = np.load("cluster_data/cluster_ps05.npy") 
     
     # Compute metrics
     fractal_dim = fractal_dimension(grid)

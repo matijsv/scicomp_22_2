@@ -137,7 +137,6 @@ env.bak/
 venv.bak/
 cluster_data_old/
 cluster_data/
-
 # Spyder project settings
 .spyderproject
 .spyproject
