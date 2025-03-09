@@ -135,6 +135,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+cluster_data_old/
 
 # Spyder project settings
 .spyderproject

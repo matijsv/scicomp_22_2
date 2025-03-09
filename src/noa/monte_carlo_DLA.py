@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numba import njit
-# from metrics import fractal_dimension, radial_distribution, radius_of_gyration
 import src.noa.metrics as metrics
 
 @njit
@@ -133,7 +132,7 @@ def plot_data_analysis(ps, rgs, rgs_std, fractal_dims, fractal_dims_std):
     # Show plot
     plt.show()
     
-def main():
+def plot_dla():
     height, width = 300, 300
     num_particles = 5000
 
@@ -169,9 +168,9 @@ def main():
 
 if __name__ == "__main__":
     # main()
-    ps = np.round(np.arange(0.005, 1, 0.01), 3)
+    ps = np.round(np.arange(0.005, 1, 0.05), 3)
     print(ps)
-    N = 2
+    N = 15
     generate_cluster_data(ps,N)
     #rgs, rgs_std, fractal_dims, fractal_dims_std = data_analysis(ps,N)
     #plot_data_analysis(ps, rgs, rgs_std, fractal_dims, fractal_dims_std)
