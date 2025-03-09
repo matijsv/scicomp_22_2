@@ -229,7 +229,7 @@ def dla(N, M, eta, omega, growth_iterations, max_sor_iterations=1000, epsilon=1e
             concentration_grid = concentration_grid_new
         assert sor_i < max_sor_iterations, "Maximum SOR iterations were surpassed, increase amount and/or check SOR omega param."
         
-        #print(f'Completed Simulation step {i}/{growth_iterations}', end='\r')
+        print(f'Completed Simulation step {i}/{growth_iterations}', end='\r')
     #end_time = time.time()
     #total_time = end_time - start_time
     #print(f"\nTotal simulation time: {total_time}s")
