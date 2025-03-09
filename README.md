@@ -12,6 +12,7 @@ These models are used to study pattern formation and growth dynamics in complex 
 ## Repository Structure
 ```
 SCICOMP_22/
+├── cluster_data_old2/             # data for DLA Discretization and Monte Carlo, auto generated    
 ├── fig/                           # Directory containing result images
 ├── src/                           # Source code directory
 │   │ 
