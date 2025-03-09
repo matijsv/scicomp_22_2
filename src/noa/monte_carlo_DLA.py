@@ -5,8 +5,6 @@ import src.noa.metrics as metrics
 import numpy as np
 import numpy as np
 
-
-
 @njit
 def simulate_DLA_numba(height, width, num_particles, ps, max_steps=1000000):
     """
@@ -68,76 +66,6 @@ def simulate_DLA_numba(height, width, num_particles, ps, max_steps=1000000):
                         particles_added += 1
                         step_count = max_steps  # Force exit from walker loop
                     break  # Stop checking neighbors
-
-    return grid
-
-
-@njit
-def simulate_DLA_numba_old(height, width, num_particles, ps, max_steps=1000000):
-    """
-    Numba-accelerated DLA simulation with a max step limit to prevent stuck walkers.
-    
-    Parameters:
-      height, width: Grid size.
-      num_particles: Total number of particles in the cluster.
-      ps: Sticking probability.
-      max_steps: Maximum steps a walker can take before being abandoned.
-
-    Returns:
-      grid: 2D numpy array with the cluster.
-    """
-
-    grid = np.zeros((height, width), dtype=np.int32)
-    
-    # Seed the initial cluster at the bottom center
-    seed_y, seed_x = height - 1, width // 2
-    grid[seed_y, seed_x] = 1
-    particles_added = 1
-
-    moves = np.array([[0, 1], [0, -1], [1, 0], [-1, 0]], dtype=np.int32)
-
-    while particles_added < num_particles:
-        x = np.random.randint(0, width)
-        y = 0
-        stuck = False
-        step_count = 0  # Track walker steps
-        
-        while not stuck:
-            # Abandon walker if max steps reached
-            if step_count >= max_steps:
-                print(f"reached max_steps={step_count}")
-                break  
-            # print(step_count)
-            if step_count % (max_steps // 100) == 0:
-                print(f'step_count:{step_count}')
-            # Choose a random move.
-            move_index = np.random.randint(0, 4)
-            dx, dy = moves[move_index]
-            new_x = (x + dx) % width  # Periodic boundary horizontally
-            new_y = y + dy
-
-            # If walker leaves vertically, abandon it.
-            if new_y < 0 or new_y >= height:
-                break
-
-            # Do not allow movement into an occupied cell.
-            if grid[new_y, new_x] == 1:
-                continue
-
-            # Update walker position.
-            x, y = new_x, new_y
-            step_count += 1  # Increment step counter
-
-            # Check if the walker is adjacent to the cluster
-            for i in range(4):
-                nx = (x + moves[i, 0]) % width
-                ny = y + moves[i, 1]
-                if 0 <= ny < height and grid[ny, nx] == 1:
-                    if np.random.random() < ps:  # Sticking probability
-                        grid[y, x] = 1
-                        particles_added += 1
-                        stuck = True
-                    break  # No need to check further
 
     return grid
 
