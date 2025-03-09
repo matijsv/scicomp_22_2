@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from numba import njit
 import src.noa.metrics as metrics
 import numpy as np
-import numpy as np
+import os
 
 @njit
 def simulate_DLA_numba(height, width, num_particles, ps, max_steps=1000000):
@@ -136,15 +136,19 @@ def plot_dla():
 
     # Run the simulation for different sticking probabilities.
     cluster_ps1 = simulate_DLA_numba(height, width, num_particles, 1.0)
+    os.makedirs("cluster_data/", exist_ok=True)
     np.save("cluster_data/cluster_ps1.npy", cluster_ps1)
 
     cluster_ps05 = simulate_DLA_numba(height, width, num_particles, 0.5)
+    os.makedirs("cluster_data/", exist_ok=True)
     np.save("cluster_data/cluster_ps05.npy", cluster_ps05)
 
     cluster_ps02 = simulate_DLA_numba(height, width, num_particles, 0.2)
+    os.makedirs("cluster_data/", exist_ok=True)
     np.save("cluster_data/cluster_ps02.npy", cluster_ps02)
 
     cluster_ps005 = simulate_DLA_numba(height, width, num_particles, 0.05)
+    os.makedirs("cluster_data/", exist_ok=True)
     np.save("cluster_data/cluster_ps005.npy", cluster_ps005)
 
     # Plot the resulting clusters.
