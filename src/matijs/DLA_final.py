@@ -1,11 +1,28 @@
+""" Maintains boundary conditions and fully converges SOR between every growth step"""
+
 import numpy as np
 from numba import prange, njit
 import time
+import numba.cuda
 
-@njit
-def sor_2step(c_k, sink_mask, omega=1):
+# calculate the maximum difference between two arrays
+@njit(parallel=True)
+def compute_max_diff(c_k, c_kp1):
+    rows, cols = c_k.shape
+    local_max = np.zeros(rows - 2)  # local max for each thread
+    for i in prange(1, rows - 1):
+        max_val = 0.0
+        for j in range(1, cols - 1):
+            diff = abs(c_kp1[i, j] - c_k[i, j])
+            if diff > max_val:
+                max_val = diff
+        local_max[i - 1] = max_val  # store the local max for each thread
+    return np.max(local_max)  # return the global max
+
+@njit(parallel=True)
+def sor_step(c_k, sink_mask, omega=1, material_conc=0):
     """
-    Steps grid using SOR twice in either direction in random order.
+    Steps grid using SOR, direction is randomized.
     Stochastically symmetric.
 
     Parameters
@@ -24,12 +41,12 @@ def sor_2step(c_k, sink_mask, omega=1):
     """
     
     N, M = c_k.shape
-    def upward_leftward_update():
-        for i in range(N-1, 0, -1):
+    def leftward_update():
+        for i in prange(1, N-1):
             for j in range(M-1, 0, -1):
-                # Skip sinks, cause concentration loss in other cells (TODO explore setting sink concentration to a constant)
+                # Material concentration is set to a constant (TODO explore material as an isolator)
                 if sink_mask[i, j] == 1:
-                    c_k[i, j] = 0
+                    c_k[i, j] = material_conc
                     continue
                 # Treats top and bottom boundaries as perfect insulators
                 if i == 0:
@@ -40,14 +57,15 @@ def sor_2step(c_k, sink_mask, omega=1):
                     continue
                 # Side boundaries are periodic, as per usual
                 c_k[i, j] = omega / 4.0 * (c_k[i+1, j] + c_k[i-1, j] + c_k[i, (j+1) % M] + c_k[i, (j-1) % M]) + (1 - omega) * c_k[i, j]
-                #assert c_k[i, j] >= 0, f'concentration non-positive at {i}, {j}'
+                #if c_k[i,j] < 0 : print(c_k[i,j])
+                #assert c_k[i, j] >= 0, f'concentration non-positive at {i}, {j}: {float(c_k[i, j])}'
     
-    def upward_rightward_update():
-        for i in range(N-1, 0, -1):
+    def rightward_update():
+        for i in prange(1, N-1):
             for j in range(0, M):
                 # Skip sinks, cause concentration loss in other cells (TODO explore setting sink concentration to a constant)
                 if sink_mask[i, j] == 1:
-                    c_k[i, j] = 0
+                    c_k[i, j] = material_conc
                     continue
                 # Treats top and bottom boundaries as perfect insulators
                 if i == 0:
@@ -58,17 +76,17 @@ def sor_2step(c_k, sink_mask, omega=1):
                     continue
                 # Side boundaries are periodic, as per usual
                 c_k[i, j] = omega / 4.0 * (c_k[i+1, j] + c_k[i-1, j] + c_k[i, (j+1) % M] + c_k[i, (j-1) % M]) + (1 - omega) * c_k[i, j]
-                #assert c_k[i, j] >= 0, f'concentration non-positive at {i}, {j}'
+                #if c_k[i,j] < 0 : print(c_k[i,j])
+                #assert c_k[i, j] >= 0, f'concentration non-positive at {i}, {j}: {float(c_k[i, j])}'
     LR = np.random.choice(np.array([0,1]))
     if LR == 1:
-        upward_leftward_update()
-        upward_rightward_update()
+        leftward_update()
     else:
-        upward_rightward_update()
-        upward_leftward_update()
+        rightward_update()
     
     return c_k
 
+@njit
 def find_adjacents(grid):
     N, M = grid.shape
     adjacents = set() # use set to avoid re-adding same adjacent cells
@@ -88,7 +106,7 @@ def find_adjacents(grid):
                     adjacents.add((i, (j+1) % M))
     return list(adjacents)
 
-def dla(N, M, eta, iterations):
+def dla(N, M, eta, iterations, max_sor_iterations=1000, epsilon=1e-5):
     # N = ROWS
     # M = COLS
     
@@ -98,6 +116,8 @@ def dla(N, M, eta, iterations):
 
     # Initialize concentration grid with straight-line gradient
     concentration_grid = np.zeros((N,M), dtype=float)
+    #concentration_grid[-1,:] = 1
+    #concentration_grid[0,:] = 1
     for i in range(N):
         concentration_grid[i, :] = i / (N - 1)
     
@@ -107,8 +127,9 @@ def dla(N, M, eta, iterations):
     start_time = time.time()
     for i in range(iterations):
         candidates = find_adjacents(material_grid)
+        
         # Process neighbors and pick one in material grid
-        assert len(candidates) > 0 & i < iterations - 1, "No more candidates found."
+        #assert len(candidates) > 0 & i < iterations - 1, "No more candidates found."
         if candidates:
             probabilities = [(concentration_grid[i, j]**eta) for i, j in candidates]
             total_probabilites = sum(probabilities)
@@ -119,12 +140,29 @@ def dla(N, M, eta, iterations):
                 chosen_neighbor = candidates[chosen_index]
                 assert material_grid[chosen_neighbor] == 0, "Already-material cell picked."
                 material_grid[chosen_neighbor] = 1
+            elif total_probabilites == 0:
+                chosen_index = np.random.choice(len(candidates))
+                chosen_neighbor = candidates[chosen_index]
+                assert material_grid[chosen_neighbor] == 0, "Already-material cell picked."
+                material_grid[chosen_neighbor] = 1
+                
         
+        # SOR STUFF 
         concentration_results.append(concentration_grid.copy())
-        concentration_grid = sor_2step(concentration_grid, material_grid)
         material_results.append(material_grid.copy())
         
+        for sor_i in range(max_sor_iterations):
+            
+            concentration_grid_new = sor_step(concentration_grid.copy(), material_grid)
+            delta = compute_max_diff(concentration_grid, concentration_grid_new)
+            if delta < epsilon:
+                break
+            
+            concentration_grid = concentration_grid_new
+        assert sor_i < max_sor_iterations, "Maximum SOR iterations were surpassed, increase amount and/or check SOR omega param."
+        
         print(f'Completed Simulation step {i}/{iterations}', end='\r')
+    
     end_time = time.time()
     total_time = end_time - start_time
     print(f"\nTotal simulation time: {total_time}s")
@@ -136,8 +174,8 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import matplotlib.animation as animation
     
-    N_STEPS = 1000
-    material_results, concentration_results = dla(100, 100, 2, N_STEPS)
+    N_STEPS = 800
+    material_results, concentration_results = dla(100, 100, 1, N_STEPS)
     print('results created, plotting...')
     """ fig, ax = plt.subplots(figsize=(6, 4))
     cax = ax.imshow(material_results[0], cmap="hot", aspect="auto", origin="lower", extent=[0, 1, 1, 0])
@@ -163,7 +201,7 @@ if __name__ == "__main__":
     
     N_FRAMES = 20
     frames = np.linspace(0, len(material_results)-1, N_FRAMES).astype(int)
-    
+
     def update_frame(frame):
         global N_FRAMES, N_STEPS
         step = int(frame * N_STEPS / N_FRAMES)
