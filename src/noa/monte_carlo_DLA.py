@@ -69,9 +69,7 @@ def simulate_DLA_numba(height, width, num_particles, ps, max_steps=1000000):
 
     return grid
 
-def generate_cluster_data(ps, N):
-    height, width = 300, 300
-    num_particles = 5000
+def generate_cluster_data(height,width,num_particles,ps, N):
 
     for ps_i in ps:
         for i in range(N):
@@ -130,50 +128,47 @@ def plot_data_analysis(ps, rgs, rgs_std, fractal_dims, fractal_dims_std):
     # Show plot
     plt.show()
     
-def plot_dla():
-    height, width = 300, 300
-    num_particles = 5000
 
-    # Run the simulation for different sticking probabilities.
-    cluster_ps1 = simulate_DLA_numba(height, width, num_particles, 1.0)
-    os.makedirs("cluster_data/", exist_ok=True)
-    np.save("cluster_data/cluster_ps1.npy", cluster_ps1)
+def plot_dla(height, width, num_particles):
+    """
+    Simulate and plot DLA clusters for different sticking probabilities.
 
-    cluster_ps05 = simulate_DLA_numba(height, width, num_particles, 0.5)
-    os.makedirs("cluster_data/", exist_ok=True)
-    np.save("cluster_data/cluster_ps05.npy", cluster_ps05)
+    Parameters:
+    height, width: Grid dimensions.
+    num_particles: Number of particles in the simulation.
+    """
 
-    cluster_ps02 = simulate_DLA_numba(height, width, num_particles, 0.2)
-    os.makedirs("cluster_data/", exist_ok=True)
-    np.save("cluster_data/cluster_ps02.npy", cluster_ps02)
+    # Define sticking probabilities to test
+    sticking_probs = [1.0, 0.5, 0.2, 0.05]
+    cluster_data = {}
 
-    cluster_ps005 = simulate_DLA_numba(height, width, num_particles, 0.05)
-    os.makedirs("cluster_data/", exist_ok=True)
-    np.save("cluster_data/cluster_ps005.npy", cluster_ps005)
+    # Create directory for saving cluster data
+    os.makedirs("cluster_data", exist_ok=True)
 
-    # Plot the resulting clusters.
-    fig, axes = plt.subplots(1, 4, figsize=(20, 5))
-    axes[0].imshow(cluster_ps1, cmap='hot', interpolation='nearest')
-    axes[0].set_title('DLA, ps = 1.0')
-    axes[1].imshow(cluster_ps05, cmap='hot', interpolation='nearest')
-    axes[1].set_title('DLA, ps = 0.5')
-    axes[2].imshow(cluster_ps02, cmap='hot', interpolation='nearest')
-    axes[2].set_title('DLA, ps = 0.2')
-    axes[3].imshow(cluster_ps005, cmap='hot', interpolation='nearest')
-    axes[3].set_title('DLA, ps = 0.05')
+    # Run the simulation for each sticking probability and save results
+    for ps in sticking_probs:
+        cluster = simulate_DLA_numba(height, width, num_particles, ps)
+        file_path = f"cluster_data/cluster_ps{ps:.2f}.npy"
+        np.save(file_path, cluster)
+        cluster_data[ps] = cluster  # Store for plotting
 
-    for ax in axes:
+    # Plot the resulting clusters
+    fig, axes = plt.subplots(1, len(sticking_probs), figsize=(20, 5))
+
+    for ax, (ps, cluster) in zip(axes, cluster_data.items()):
+        ax.imshow(cluster, cmap='hot', interpolation='nearest')
+        ax.set_title(f'DLA, p_s = {ps:.2f}')
         ax.axis('off')
+
     plt.tight_layout()
     plt.show()
 
-
 if __name__ == "__main__":
-    # plot_dla()
-    # ps = np.round(np.arange(0.005, 1.105, 0.1), 3)
+    height, width = 100, 100
+    num_particles = 800
+    plot_dla(height,width,num_particles)
     ps = [0.05,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
-    print(ps)
-    N = 10
-    # generate_cluster_data(ps,N)
+    N = 25
+    # generate_cluster_data(height,width,num_particles,ps, N)
     rgs, rgs_std, fractal_dims, fractal_dims_std = data_analysis(ps,N)
     plot_data_analysis(ps, rgs, rgs_std, fractal_dims, fractal_dims_std)
