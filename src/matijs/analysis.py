@@ -9,14 +9,16 @@ def plot_end(N, M, eta, omega, growth_iterations, max_sor_iterations=1000, epsil
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6), dpi=300)
     
     cax1 = ax1.imshow(material_results[-1], cmap="hot", aspect="auto", origin="lower", extent=[0, 1, 1, 0])
-    fig.colorbar(cax1, ax=ax1, label="Material")
-    ax1.set_xlabel("x")
-    ax1.set_ylabel("y")
+    ax1.set_xlabel("x", fontsize=20)
+    ax1.set_ylabel("y", fontsize=20)
     
     cax2 = ax2.imshow(concentration_results[-1], cmap="hot", aspect="auto", origin="lower", extent=[0, 1, 1, 0])
     fig.colorbar(cax2, ax=ax2, label="Concentration")
-    ax2.set_xlabel("x")
-    ax2.set_ylabel("y")
+    ax2.set_xlabel("x", fontsize=20)
+    ax2.set_ylabel("y", fontsize=20)
+    
+    ax1.set_aspect('equal')
+    ax2.set_aspect('equal')
     
     plt.tight_layout()
     plt.show()
