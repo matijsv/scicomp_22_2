@@ -15,7 +15,7 @@ def fractal_dimension(grid, sizes=np.logspace(1, 2, num=10, base=2, dtype=int)):
       float: estimated fractal dimension.
     """
 
-    nonzero_points = np.column_stack(np.nonzero(grid))  # Extract occupied sites
+    #nonzero_points = np.column_stack(np.nonzero(grid))  # Extract occupied sites
     counts = []
     
     for size in sizes:
@@ -31,7 +31,6 @@ def fractal_dimension(grid, sizes=np.logspace(1, 2, num=10, base=2, dtype=int)):
     log_counts = np.log(counts)
     coeffs = np.polyfit(log_sizes, log_counts, 1)
     return -coeffs[0]  # Fractal dimension is the negative slope
-
 
 def radial_distribution(grid):
     """
@@ -74,7 +73,7 @@ if __name__ == "__main__":
     # Example usage: load a cluster and compute metrics
     import matplotlib.pyplot as plt
     
-    grid1 = np.load("cluster_data/cluster_ps1.npy") 
+    grid1 = np.load("cluster_data_old/cluster_ps1.npy") 
     
     # Compute metrics
     fractal_dim = fractal_dimension(grid1)
@@ -84,7 +83,7 @@ if __name__ == "__main__":
     print(f"Fractal Dimension: {fractal_dim:.3f}")
     print(f"Radius of Gyration: {rg:.3f}")
     
-    grid = np.load("cluster_data/cluster_ps02.npy") 
+    grid = np.load("cluster_data_old/cluster_ps02.npy") 
     
     # Compute metrics
     fractal_dim = fractal_dimension(grid)
@@ -94,7 +93,7 @@ if __name__ == "__main__":
     print(f"Fractal Dimension: {fractal_dim:.3f}")
     print(f"Radius of Gyration: {rg:.3f}")
 
-    grid = np.load("cluster_data/cluster_ps05.npy") 
+    grid = np.load("cluster_data_old/cluster_ps05.npy") 
     
     # Compute metrics
     fractal_dim = fractal_dimension(grid)

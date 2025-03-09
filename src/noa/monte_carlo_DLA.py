@@ -2,9 +2,78 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numba import njit
 import src.noa.metrics as metrics
+import numpy as np
+import numpy as np
+
+
 
 @njit
-def simulate_DLA_numba(height, width, num_particles, ps, max_steps=5000000):
+def simulate_DLA_numba(height, width, num_particles, ps, max_steps=1000000):
+    """
+    Monte Carlo DLA simulation with a max step limit, ensuring walkers move 
+    until they find an unoccupied cell if they encounter a boundary.
+
+    Parameters:
+      height, width: Grid size.
+      num_particles: Total number of particles in the cluster.
+      ps: Sticking probability.
+      max_steps: Maximum steps a walker can take before being abandoned.
+
+    Returns:
+      grid: 2D numpy array with the cluster.
+    """
+
+    grid = np.zeros((height, width), dtype=np.int32)
+    
+    # Seed the initial cluster at the bottom center
+    seed_y, seed_x = height - 1, width // 2
+    grid[seed_y, seed_x] = 1
+    particles_added = 1
+
+    moves = np.array([[0, 1], [0, -1], [1, 0], [-1, 0]], dtype=np.int32)
+
+    while particles_added < num_particles:
+        x = np.random.randint(0, width)
+        y = 0
+        step_count = 0  # Track walker steps
+
+        while step_count < max_steps:
+            # Choose a random move until it lands on a valid, unoccupied cell
+            for _ in range(10):  # Try a max of 10 random moves to find a valid one
+                move_index = np.random.randint(0, 4)
+                dx, dy = moves[move_index]
+                new_x = (x + dx) % width  # Periodic boundary horizontally
+                new_y = y + dy
+
+                # If walker moves out of the vertical bounds, reset it at the top
+                if new_y < 0 or new_y >= height:
+                    x = np.random.randint(0, width)
+                    y = 0
+                    step_count = 0
+                    break  # Restart walker
+
+                # Ensure the walker does not move into an occupied cell
+                if grid[new_y, new_x] == 0:
+                    x, y = new_x, new_y
+                    step_count += 1
+                    break  # Found a valid move, break out of retry loop
+
+            # Check if walker is adjacent to the cluster
+            for i in range(4):
+                nx = (x + moves[i, 0]) % width
+                ny = y + moves[i, 1]
+                if 0 <= ny < height and grid[ny, nx] == 1:
+                    if np.random.random() < ps:  # Sticking probability
+                        grid[y, x] = 1
+                        particles_added += 1
+                        step_count = max_steps  # Force exit from walker loop
+                    break  # Stop checking neighbors
+
+    return grid
+
+
+@njit
+def simulate_DLA_numba_old(height, width, num_particles, ps, max_steps=1000000):
     """
     Numba-accelerated DLA simulation with a max step limit to prevent stuck walkers.
     
@@ -34,11 +103,13 @@ def simulate_DLA_numba(height, width, num_particles, ps, max_steps=5000000):
         step_count = 0  # Track walker steps
         
         while not stuck:
+            # Abandon walker if max steps reached
             if step_count >= max_steps:
-                # Abandon walker if max steps reached
+                print(f"reached max_steps={step_count}")
                 break  
-            # if step_count % 10000 ==0:
-                # print(f'step_count:{step_count}')
+            # print(step_count)
+            if step_count % (max_steps // 100) == 0:
+                print(f'step_count:{step_count}')
             # Choose a random move.
             move_index = np.random.randint(0, 4)
             dx, dy = moves[move_index]
@@ -69,7 +140,6 @@ def simulate_DLA_numba(height, width, num_particles, ps, max_steps=5000000):
                     break  # No need to check further
 
     return grid
-
 
 def generate_cluster_data(ps, N):
     height, width = 300, 300
@@ -167,13 +237,11 @@ def plot_dla():
 
 
 if __name__ == "__main__":
-    # main()
-    ps = np.round(np.arange(0.005, 1, 0.05), 3)
+    # plot_dla()
+    # ps = np.round(np.arange(0.005, 1.105, 0.1), 3)
+    ps = [0.05,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
     print(ps)
-    N = 15
-    generate_cluster_data(ps,N)
-    #rgs, rgs_std, fractal_dims, fractal_dims_std = data_analysis(ps,N)
-    #plot_data_analysis(ps, rgs, rgs_std, fractal_dims, fractal_dims_std)
-
-
-
+    N = 10
+    # generate_cluster_data(ps,N)
+    rgs, rgs_std, fractal_dims, fractal_dims_std = data_analysis(ps,N)
+    plot_data_analysis(ps, rgs, rgs_std, fractal_dims, fractal_dims_std)
